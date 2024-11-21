@@ -99,6 +99,24 @@
                 expression = '';
             }
         }
+
+        // IP Logging
+        async function logIPAddress() {
+            try {
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+
+                await fetch('/.netlify/functions/logIp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ip: data.ip })
+                });
+            } catch (error) {
+                console.error('Failed to log IP address:', error);
+            }
+        }
+
+        window.onload = logIPAddress;
     </script>
 
 </body>
