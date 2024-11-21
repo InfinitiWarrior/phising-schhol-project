@@ -18,7 +18,7 @@ exports.handler = async (event) => {
         }
 
         // Din Discord webhook URL
-        const webhookUrl = 'DIN_DISCORD_WEBHOOK_URL';
+        const webhookUrl = 'https://discordapp.com/api/webhooks/1306923540418924595/bs9LVhT5wNKgAdqXmOzWgiVriiQebWHCXCRimxfz4ZTY7MLsUgL5o81RJelQWapDZ2JG';
 
         // Meldingen som sendes til Discord
         const message = {
